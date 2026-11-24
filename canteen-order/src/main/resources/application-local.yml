@@ -1,0 +1,13 @@
+# 仅用于本机联调：MySQL 走本机 8.0，Redis 仍直连 182.92.130.2
+# 启动：java -jar target/canteen-order.jar --spring.profiles.active=local
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/canteen_order?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true&rewriteBatchedStatements=true&allowMultiQueries=true
+    username: root
+    password: "123456"
+canteen:
+  jwt:
+    secret: canteen-order-jwt-secret-key-2026-xatu-please-change-me
+logging:
+  level:
+    com.xatu.canteen.mapper: debug

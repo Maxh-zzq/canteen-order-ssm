@@ -1,0 +1,76 @@
+# canteen-order-web Nginx 部署样例
+# 用法：
+#   1. npm run build
+#   2. 将 dist/ 发布到 /var/www/canteen-order-web
+#   3. 本文件放入 /etc/nginx/conf.d/canteen.conf，按实际域名/后端地址调整
+#   4. nginx -t && systemctl reload nginx
+#
+# 说明：
+#   - Nginx 只托管构建产物，不存放前端源码。
+#   - /api 与 /uploads 反向代理到 Spring Boot 8083，避免跨域。
+#   - 若后端在另一台机器，把 upstream 改为内网地址。
+
+upstream canteen_api {
+    server 127.0.0.1:8083;
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    server_name canteen.example.com;
+
+    root /var/www/canteen-order-web;
+    index index.html;
+
+    # 菜品图片上传，按后端限制调整
+    client_max_body_size 10m;
+
+    gzip on;
+    gzip_min_length 1024;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript application/xml image/svg+xml;
+
+    # 带 hash 的构建产物长缓存
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # SPA 路由回退：/menu、/admin/dishes 等交给 index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # 后端 API
+    location /api/ {
+        proxy_pass http://canteen_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 60s;
+    }
+
+    # 菜品图片等上传资源
+    location /uploads/ {
+        proxy_pass http://canteen_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    # 健康检查（可选）
+    location = /health {
+        proxy_pass http://canteen_api/actuator/health;
+        access_log off;
+    }
+}

@@ -1,0 +1,127 @@
+server:
+  port: ${SERVER_PORT:8083}
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  application:
+    name: canteen-order
+  profiles:
+    active: default
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "${DB_URL:jdbc:mysql://182.92.130.2:3306/canteen_order?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true&rewriteBatchedStatements=true&allowMultiQueries=true}"
+    username: "${DB_USERNAME:root}"
+    password: "${DB_PASSWORD:123456}"
+    hikari:
+      pool-name: CanteenHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+
+  redis:
+    host: ${REDIS_HOST:182.92.130.2}
+    port: ${REDIS_PORT:6379}
+    password:
+    database: ${REDIS_DATABASE:0}
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: 2000ms
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    encoding: UTF-8
+    validate-on-migrate: false
+
+  jackson:
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.xatu.canteen.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      update-strategy: not_null
+
+canteen:
+  jwt:
+    secret: ${JWT_SECRET:canteen-order-jwt-secret-key-2026-xatu-please-change-me}
+    access-token-seconds: 1800
+    refresh-token-seconds: 604800
+    single-login: false
+  order:
+    timeout-minutes: 15
+  captcha:
+    enabled: false
+    expire-seconds: 120
+  file:
+    upload-dir: ${UPLOAD_DIR:./uploads}
+    access-prefix: /uploads/
+    allowed-extensions: jpg,jpeg,png,webp
+    max-size-mb: 5
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:*}"
+  pay:
+    secret: ${PAY_SECRET:canteen-pay-secret-2026}
+  worker-id: 1
+
+logging:
+  level:
+    root: info
+    com.xatu.canteen: info
+    com.xatu.canteen.mapper: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{40} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{40} - %msg%n"
+  file:
+    name: ${LOG_FILE:./logs/canteen-order.log}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
